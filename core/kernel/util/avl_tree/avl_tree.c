@@ -7,6 +7,10 @@
 #define HEIGHT(ptr) ((AVL_NODE *)(ULONG)ptr == NULL) ? 0: \
                                                       (((AVL_NODE *)(ULONG)(ptr))->height)
 
+LOCAL AVL_NODE *backtrack[AVL_TREE_MAX_HEIGHT_32] = {NULL};
+
+UINT32 track_count = 0;
+
 /* for LL type of AVL tree to rotate.
  *       k2
  *      / \
@@ -93,14 +97,25 @@ STATUS avltree_insert(AVL_TREE root, AVL_NODE * node)
 {
     AVL_NODE * node_tmp = root;
 
-    if(NULL == node)
+    if(root == NULL || node == NULL)
         return ERROR;
 
-    /* first node of the tree */
-    if(NULL == root){
-        root = node;
-        return OK;
-    }
+    /* get the insert location */ 
+    while(node_tmp){
+        if(node_tmp == NULL)
+            break;
+
+        backtrack[track_count ++] = node_tmp;
+
+        /* could not add node that key exist in the tree */
+        if(node->key == node_tmp->key)
+            return ERROR;
+        else if(node->key > node_tmp->key)
+            node_tmp = node_tmp->right;
+        else
+            node_tmp = node_tmp->left;
+    };
+
 
     return OK;
 }
