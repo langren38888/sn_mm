@@ -93,39 +93,135 @@ LOCAL inline AVL_NODE *rl_rotation(AVL_TREE k1)
     return rr_rotation(k1);
 }
 
+LOCAL inline void avltree_rebalance(AVL_NODE **backtrack, UINT32 track_count)
+{
+
+}
+
 STATUS avltree_insert(AVL_TREE root, AVL_NODE * node)
 {
-    AVL_NODE * node_tmp = root;
+    AVL_NODE ** node_pp = &root;
+    AVL_NODE *  backtrack[AVL_TREE_MAX_HEIGHT_32] = {NULL};
+    UINT32 track_count = 0;
 
     if(root == NULL || node == NULL)
         return ERROR;
 
     /* get the insert location */ 
-    while(node_tmp){
-        if(node_tmp == NULL)
+    while(track_count < AVL_TREE_MAX_HEIGHT_32){
+        if(*node_pp == NULL)
             break;
 
-        backtrack[track_count ++] = node_tmp;
+        backtrack[track_count ++] = *node_pp;
 
-        /* could not add node that key exist in the tree */
-        if(node->key == node_tmp->key)
+        /* add node that key is existed in the tree is forbided */
+        if(node->key == (*node_pp)->key){
             return ERROR;
-        else if(node->key > node_tmp->key)
-            node_tmp = node_tmp->right;
-        else
-            node_tmp = node_tmp->left;
+        }
+        else if(node->key > (*node_pp)->key){
+            node_pp   = &(*node_pp)->right;
+        }
+        else{
+            node_pp   = &(*node_pp)->left;
+        }
     };
 
+    if(track_count == AVL_TREE_MAX_HEIGHT_32)
+        return ERROR;
+
+    /* init the node that to be inserted */
+    node->height    = 1;
+    node->left      = NULL;
+    node->right     = NULL;
+
+    /* insert the node */
+    *node_pp      = node;
+
+    /* check balance of the tree  */
+    avltree_rebalance(backtrack, track_count);
 
     return OK;
 }
 
-int avltree_delete(AVL_TREE root, UINT32 key)
+AVL_NODE * avltree_delete(AVL_TREE root, UINT32 key)
 {
-    if(root == NULL)
-        return ERROR;
+    AVL_NODE *  del_p = NULL;
+    AVL_NODE ** del_p_rep;
+    AVL_NODE ** node_pp;
+    AVL_NODE *  node_p = NULL ;
+    AVL_NODE *  backtrack[AVL_TREE_MAX_HEIGHT_32] = {NULL};
+    UINT32 track_count = 0;
+    UINT32 track_count_rep = 0;
 
-    return OK;
+    if(root != NULL){
+        node_pp = &root;
+    }else{
+        return NULL;
+    }
+
+    /* find the node which to be del */
+    while(track_count < AVL_TREE_MAX_HEIGHT_32){
+        if(*node_pp == NULL)
+            return NULL;
+
+        backtrack[track_count ++] = *node_pp;
+
+        if(key == (*node_pp)->key){
+            break;
+        }else if(key < (*node_pp)->key){
+            node_pp = &(*node_pp)->left;
+        }else{
+            node_pp = &(*node_pp)->right;
+        }
+    };
+
+    if(track_count == AVL_TREE_MAX_HEIGHT_32)
+        return NULL;
+
+    del_p = *node_pp;
+    del_p_rep = node_pp;
+    track_count_rep = track_count;
+
+    /* replace del node with max of the left child tree or
+    * min of the right child tree.
+    */
+    if((*node_pp)->left == NULL){
+        *node_pp = (*node_pp)->right;
+        track_count --;
+    }else{
+        node_pp = &(*node_pp)->left;
+
+        /* get the max of the left child tree */
+        while(track_count < AVL_TREE_MAX_HEIGHT_32){
+            if((*node_pp)->right == NULL)
+                break;
+            backtrack[track_count ++] = *node_pp;
+            node_pp = &(*node_pp)->right;
+        }
+
+        if(track_count == AVL_TREE_MAX_HEIGHT_32)
+            return NULL;
+
+        node_p = *node_pp;
+
+        /* don't care leftchild is NULL or not, if it is,
+        * then the node set NULL
+        */
+        *node_pp = (*node_pp)->left;
+
+        node_p->height  = del_p->height;
+        node_p->left    = del_p->left;
+        node_p->right   = del_p->right;
+
+        *del_p_rep = node_p;
+
+        backtrack[track_count_rep] = node_p;
+    }
+
+    /* check balance of the tree  */
+    avltree_rebalance(backtrack, track_count);
+
+    return del_p;
 }
 
 AVL_NODE *avltree_search(AVL_TREE root, UINT32 key)
@@ -166,9 +262,4 @@ AVL_NODE *avltree_maximum_get(AVL_TREE root)
         return NULL;
 
     return NULL;
-}
-
-LOCAL inline void avltree_rebalance()
-{
-
 }
