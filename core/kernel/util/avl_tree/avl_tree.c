@@ -93,15 +93,78 @@ LOCAL inline AVL_NODE *rl_rotation(AVL_TREE k1)
     return rr_rotation(k1);
 }
 
-LOCAL inline void avltree_rebalance(AVL_NODE **backtrack, UINT32 track_count)
+LOCAL inline void avltree_rebalance(AVL_NODE ***backtrack, UINT32 track_count)
 {
+    AVL_NODE *  node_p = NULL;
+    AVL_NODE ** node_pp;
+    UINT32  height = 0;
 
+    while(--track_count){
+        AVL_NODE *  node_left;
+        AVL_NODE *  node_right;
+
+        node_pp = backtrack[track_count];
+        node_p  = *node_pp;
+
+        node_left   = node_p->left;
+        node_right  = node_p->right;
+        height = HEIGHT(node_left) - HEIGHT(node_right);
+
+        if(height > 1){
+            /* LL LR */
+            AVL_NODE *  node_left_left;
+            AVL_NODE *  node_left_right;
+
+            node_left_left  = node_left->left;
+            node_left_right = node_left->right;
+
+            if((node_left_left != NULL) && (HEIGHT(node_left_left) >= HEIGHT(node_left_right))){
+                /* LL */
+                *node_pp = ll_rotation(node_p);
+            }else{
+                /* LR */
+                *node_pp = lr_rotation(node_p);
+            }
+        }else if(height < -1){
+            /* RR RL */
+            AVL_NODE *  node_right_right;
+            AVL_NODE *  node_right_left;
+
+            node_right_left  = node_right->left;
+            node_right_right = node_right->right;
+
+            if((node_right_right != NULL) && (HEIGHT(node_right_right) >= HEIGHT(node_right_left))){
+                /* RR */
+                *node_pp = rr_rotation(node_p);
+            }else{
+                /* RL */
+                *node_pp = rl_rotation(node_p);
+            }
+        }else{
+
+            /* the sub tree of the node is balanced
+            * so just set the height of the node.
+            */
+            height = MAX(HEIGHT(node_left), HEIGHT(node_right)) + 1;
+
+            if(node_p->height != height){
+                node_p->height = height;
+            }else{
+                /* if deleted or inserted a node from a tree and not changed
+                * the height of sub tree we can confirm that whole tree still balanced.
+                * so stop here.
+                */
+                break;
+            }
+        }
+    }
 }
 
-STATUS avltree_insert(AVL_TREE root, AVL_NODE * node)
+STATUS avltree_insert(AVL_TREE *root, AVL_NODE * node)
 {
-    AVL_NODE ** node_pp = &root;
-    AVL_NODE *  backtrack[AVL_TREE_MAX_HEIGHT_32] = {NULL};
+    AVL_NODE ** node_pp = root;
+    AVL_NODE *  node_p  = NULL;
+    AVL_NODE ** backtrack[AVL_TREE_MAX_HEIGHT_32] = {NULL};
     UINT32 track_count = 0;
 
     if(root == NULL || node == NULL)
@@ -109,33 +172,34 @@ STATUS avltree_insert(AVL_TREE root, AVL_NODE * node)
 
     /* get the insert location */ 
     while(track_count < AVL_TREE_MAX_HEIGHT_32){
-        if(*node_pp == NULL)
+        node_p = *node_pp;
+        if(node_p == NULL)
             break;
 
-        backtrack[track_count ++] = *node_pp;
+        backtrack[track_count ++] = node_pp;
 
         /* add node that key is existed in the tree is forbided */
-        if(node->key == (*node_pp)->key){
+        if(node->key == node_p->key){
             return ERROR;
         }
-        else if(node->key > (*node_pp)->key){
-            node_pp   = &(*node_pp)->right;
+        else if(node->key > node_p->key){
+            node_pp   = &node_p->right;
         }
         else{
-            node_pp   = &(*node_pp)->left;
+            node_pp   = &node_p->left;
         }
-    };
+    }
 
     if(track_count == AVL_TREE_MAX_HEIGHT_32)
         return ERROR;
 
-    /* init the node that to be inserted */
+    /* init the node to be inserted */
     node->height    = 1;
     node->left      = NULL;
     node->right     = NULL;
 
     /* insert the node */
-    *node_pp      = node;
+    *node_pp        = node;
 
     /* check balance of the tree  */
     avltree_rebalance(backtrack, track_count);
@@ -143,60 +207,65 @@ STATUS avltree_insert(AVL_TREE root, AVL_NODE * node)
     return OK;
 }
 
-AVL_NODE * avltree_delete(AVL_TREE root, UINT32 key)
+AVL_NODE * avltree_delete(AVL_TREE *root, UINT32 key)
 {
     AVL_NODE *  del_p = NULL;
     AVL_NODE ** del_p_rep;
-    AVL_NODE ** node_pp;
     AVL_NODE *  node_p = NULL ;
-    AVL_NODE *  backtrack[AVL_TREE_MAX_HEIGHT_32] = {NULL};
+    AVL_NODE ** node_pp;
+    AVL_NODE ** backtrack[AVL_TREE_MAX_HEIGHT_32] = {NULL};
     UINT32 track_count = 0;
     UINT32 track_count_rep = 0;
 
     if(root != NULL){
-        node_pp = &root;
+        node_pp = root;
     }else{
         return NULL;
     }
 
     /* find the node which to be del */
     while(track_count < AVL_TREE_MAX_HEIGHT_32){
-        if(*node_pp == NULL)
+        node_p = *node_pp;
+
+        if(node_p == NULL)
             return NULL;
 
-        backtrack[track_count ++] = *node_pp;
+        backtrack[track_count ++] = node_pp;
 
-        if(key == (*node_pp)->key){
+        if(key == node_p->key){
             break;
-        }else if(key < (*node_pp)->key){
-            node_pp = &(*node_pp)->left;
+        }else if(key < node_p->key){
+            node_pp = &node_p->left;
         }else{
-            node_pp = &(*node_pp)->right;
+            node_pp = &node_p->right;
         }
-    };
+    }
 
     if(track_count == AVL_TREE_MAX_HEIGHT_32)
         return NULL;
 
-    del_p = *node_pp;
+    del_p = node_p;
     del_p_rep = node_pp;
     track_count_rep = track_count;
 
-    /* replace del node with max of the left child tree or
-    * min of the right child tree.
+    /* replace del node with maxnum of the left child tree or
+    * minnum of the right child tree.
     */
-    if((*node_pp)->left == NULL){
-        *node_pp = (*node_pp)->right;
+    if(node_p->left == NULL){
+        *node_pp = node_p->right;
         track_count --;
     }else{
-        node_pp = &(*node_pp)->left;
+        node_pp = &node_p->left;
 
-        /* get the max of the left child tree */
+        /* get the maxnum of the left child tree */
         while(track_count < AVL_TREE_MAX_HEIGHT_32){
-            if((*node_pp)->right == NULL)
+            node_p = *node_pp;
+
+            if(node_p->right == NULL)
                 break;
-            backtrack[track_count ++] = *node_pp;
-            node_pp = &(*node_pp)->right;
+
+            backtrack[track_count ++] = node_pp;
+            node_pp = &node_p->right;
         }
 
         if(track_count == AVL_TREE_MAX_HEIGHT_32)
@@ -204,10 +273,10 @@ AVL_NODE * avltree_delete(AVL_TREE root, UINT32 key)
 
         node_p = *node_pp;
 
-        /* don't care leftchild is NULL or not, if it is,
+        /* we don't care leftchild is NULL or not, if it is,
         * then the node set NULL
         */
-        *node_pp = (*node_pp)->left;
+        *node_pp = node_p->left;
 
         node_p->height  = del_p->height;
         node_p->left    = del_p->left;
@@ -215,7 +284,11 @@ AVL_NODE * avltree_delete(AVL_TREE root, UINT32 key)
 
         *del_p_rep = node_p;
 
-        backtrack[track_count_rep] = node_p;
+        /* node had exchanged
+        * replace the addr of delnode leftchild with
+        * addr of node_p leftchild in the backtrack
+        */
+        backtrack[track_count_rep] = &node_p->left;
     }
 
     /* check balance of the tree  */

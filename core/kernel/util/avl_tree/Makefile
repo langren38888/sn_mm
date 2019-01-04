@@ -3,7 +3,7 @@
 avl:
 	gcc -I../../common/ avl_tree.c -o avl
 
-avltest:
+avl_test:
 	gcc -I../../common/ avl_tree.c avl_tree_test.c -o avl
 
 clean:
