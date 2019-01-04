@@ -299,26 +299,62 @@ AVL_NODE * avltree_delete(AVL_TREE *root, UINT32 key)
 
 AVL_NODE *avltree_search(AVL_TREE root, UINT32 key)
 {
+    AVL_NODE * node_p = root;
+
     if(root == NULL)
         return NULL;
 
-    return NULL;
+    while(node_p != NULL){
+        if(node_p->key == key)
+            break;
+
+        if(key > node_p->key)
+            node_p = node_p->right;
+        else
+            node_p = node_p->left;
+    }
+
+    return node_p;
 }
 
 AVL_NODE *avltree_succesor_get(AVL_TREE root, UINT32 key)
 {
+    AVL_NODE *node_p = root;
+    AVL_NODE *node_succesor = NULL;
+
     if(root == NULL)
         return NULL;
 
-    return NULL;
+    while(node_p != NULL){
+        if(key >= node_p->key){
+            node_p = node_p->right;
+        }else{
+            node_succesor = node_p;
+            node_p = node_p->left;
+        }
+    }
+
+    return node_succesor;
 }
 
 AVL_NODE *avltree_predecessor_get(AVL_TREE root, UINT32 key)
 {
+    AVL_NODE *node_p = root;
+    AVL_NODE *node_predecessor = NULL;
+
     if(root == NULL)
         return NULL;
 
-    return NULL;
+    while(node_p != NULL){
+        if(key <= node_p->key){
+            node_p = node_p->left;
+        }else{
+            node_predecessor = node_p;
+            node_p = node_p->right;
+        }
+    }
+
+    return node_predecessor;
 }
 
 AVL_NODE *avltree_minimum_get(AVL_TREE root)
@@ -326,7 +362,11 @@ AVL_NODE *avltree_minimum_get(AVL_TREE root)
     if(root == NULL)
         return NULL;
 
-    return NULL;
+    while(root != NULL){
+        root = root->right;
+    }
+
+    return root;
 }
 
 AVL_NODE *avltree_maximum_get(AVL_TREE root)
@@ -334,5 +374,15 @@ AVL_NODE *avltree_maximum_get(AVL_TREE root)
     if(root == NULL)
         return NULL;
 
-    return NULL;
+    while(root != NULL){
+        root = root->left;
+    }
+
+    return root;
+}
+
+STATUS avltree_walk(AVL_TREE root)
+{
+
+    return OK;
 }
