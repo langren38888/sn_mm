@@ -27,6 +27,9 @@ typedef struct avl_node{
     unsigned int height;        /* the height of the node */
 }AVL_NODE, *AVL_TREE;
 
+/* typedef */
+typedef STATUS (*in_order_callback)(AVL_NODE * node, void * in_orde_para);
+
 /* funcs extern */
 
 extern AVL_TREE LL_rotation(AVL_TREE k2);

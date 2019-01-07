@@ -9,6 +9,9 @@
 
 LOCAL AVL_NODE *backtrack[AVL_TREE_MAX_HEIGHT_32] = {NULL};
 
+/* why the node stack number is AVL_TREE_MAX_HEIGHT_32 * 2 ? */
+LOCAL AVL_NODE *node_stack[AVL_TREE_MAX_HEIGHT_32 * 2];
+
 UINT32 track_count = 0;
 
 /* for LL type of AVL tree to rotate.
@@ -167,7 +170,7 @@ STATUS avltree_insert(AVL_TREE *root, AVL_NODE * node)
     AVL_NODE ** backtrack[AVL_TREE_MAX_HEIGHT_32] = {NULL};
     UINT32 track_count = 0;
 
-    if(root == NULL || node == NULL)
+    if(NULL == root || NULL == node)
         return ERROR;
 
     /* get the insert location */ 
@@ -301,7 +304,7 @@ AVL_NODE *avltree_search(AVL_TREE root, UINT32 key)
 {
     AVL_NODE * node_p = root;
 
-    if(root == NULL)
+    if(NULL == root)
         return NULL;
 
     while(node_p != NULL){
@@ -322,7 +325,7 @@ AVL_NODE *avltree_succesor_get(AVL_TREE root, UINT32 key)
     AVL_NODE *node_p = root;
     AVL_NODE *node_succesor = NULL;
 
-    if(root == NULL)
+    if(NULL == root)
         return NULL;
 
     while(node_p != NULL){
@@ -342,7 +345,7 @@ AVL_NODE *avltree_predecessor_get(AVL_TREE root, UINT32 key)
     AVL_NODE *node_p = root;
     AVL_NODE *node_predecessor = NULL;
 
-    if(root == NULL)
+    if(NULL == root)
         return NULL;
 
     while(node_p != NULL){
@@ -359,7 +362,7 @@ AVL_NODE *avltree_predecessor_get(AVL_TREE root, UINT32 key)
 
 AVL_NODE *avltree_minimum_get(AVL_TREE root)
 {
-    if(root == NULL)
+    if(NULL == root)
         return NULL;
 
     while(root != NULL){
@@ -371,7 +374,7 @@ AVL_NODE *avltree_minimum_get(AVL_TREE root)
 
 AVL_NODE *avltree_maximum_get(AVL_TREE root)
 {
-    if(root == NULL)
+    if(NULL == root)
         return NULL;
 
     while(root != NULL){
@@ -381,8 +384,32 @@ AVL_NODE *avltree_maximum_get(AVL_TREE root)
     return root;
 }
 
-STATUS avltree_walk(AVL_TREE root)
+/* only in-orde(left, root, right) tree walk */
+STATUS avltree_tree_travel(AVL_TREE root, in_order_callback call_back, void *para)
 {
+    AVL_NODE * node_p = root;
+    UINT32 node_cnt = 0;
+
+    if(NULL == root || NULL == call_back)
+        return ERROR;
+
+    while(node_cnt < AVL_TREE_MAX_HEIGHT_32 * 2){
+
+        while(node_p != NULL){
+            node_stack[node_cnt++] = node_p;
+            node_p = node_p->left;
+        }
+
+        if(0 == node_cnt)
+            break;
+
+        node_p = node_stack[--node_cnt];
+
+        /* get the right node and give it to call_back */
+        call_back(node_p, para);
+
+        node_p = node_p->right;
+    }
 
     return OK;
 }
