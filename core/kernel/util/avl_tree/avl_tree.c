@@ -4,8 +4,8 @@
 
 /* macro defined */
 
-#define HEIGHT(ptr) ((AVL_NODE *)(ULONG)ptr == NULL) ? 0: \
-                                                      (((AVL_NODE *)(ULONG)(ptr))->height)
+#define HEIGHT(ptr) (((AVL_NODE *)(ULONG)ptr == NULL) ? 0: \
+                                                      (((AVL_NODE *)(ULONG)(ptr))->height))
 
 LOCAL AVL_NODE *backtrack[AVL_TREE_MAX_HEIGHT_32] = {NULL};
 
@@ -33,7 +33,7 @@ LOCAL inline AVL_NODE *ll_rotation(AVL_TREE k2)
     k1->right   = k2;
 
     k2->height  = MAX(HEIGHT(k2->left), HEIGHT(k2->right)) + 1;
-    k1->height  = MAX(HEIGHT(k1->left), HEIGHT(k2->height)) + 1;
+    k1->height  = MAX(HEIGHT(k1->left), k2->height) + 1;
 
     return k1;
 }
@@ -57,7 +57,7 @@ LOCAL inline AVL_NODE *rr_rotation(AVL_TREE k2)
     k1->left    = k2;
 
     k2->height  = MAX(HEIGHT(k2->left), HEIGHT(k2->right)) + 1;
-    k1->height  = MAX(HEIGHT(k1->left), HEIGHT(k2->height)) + 1;
+    k1->height  = MAX(k2->height, HEIGHT(k1->right)) + 1;
 
     return k1;
 }
@@ -100,13 +100,13 @@ LOCAL inline void avltree_rebalance(AVL_NODE ***backtrack, UINT32 track_count)
 {
     AVL_NODE *  node_p = NULL;
     AVL_NODE ** node_pp;
-    UINT32  height = 0;
+    INT32  height = 0;
 
-    while(--track_count){
+    while(track_count > 0){
         AVL_NODE *  node_left;
         AVL_NODE *  node_right;
 
-        node_pp = backtrack[track_count];
+        node_pp = backtrack[--track_count];
         node_p  = *node_pp;
 
         node_left   = node_p->left;
@@ -210,7 +210,7 @@ STATUS avltree_insert(AVL_TREE *root, AVL_NODE * node)
     return OK;
 }
 
-AVL_NODE * avltree_delete(AVL_TREE *root, UINT32 key)
+AVL_NODE *avltree_delete(AVL_TREE *root, UINT32 key)
 {
     AVL_NODE *  del_p = NULL;
     AVL_NODE ** del_p_rep;
@@ -320,7 +320,7 @@ AVL_NODE *avltree_search(AVL_TREE root, UINT32 key)
     return node_p;
 }
 
-AVL_NODE *avltree_succesor_get(AVL_TREE root, UINT32 key)
+AVL_NODE *avltree_successor_get(AVL_TREE root, UINT32 key)
 {
     AVL_NODE *node_p = root;
     AVL_NODE *node_succesor = NULL;
@@ -360,24 +360,24 @@ AVL_NODE *avltree_predecessor_get(AVL_TREE root, UINT32 key)
     return node_predecessor;
 }
 
-AVL_NODE *avltree_minimum_get(AVL_TREE root)
+AVL_NODE *avltree_maxnum_get(AVL_TREE root)
 {
     if(NULL == root)
         return NULL;
 
-    while(root != NULL){
+    while(root->right != NULL){
         root = root->right;
     }
 
     return root;
 }
 
-AVL_NODE *avltree_maximum_get(AVL_TREE root)
+AVL_NODE *avltree_minnum_get(AVL_TREE root)
 {
     if(NULL == root)
         return NULL;
 
-    while(root != NULL){
+    while(root->left != NULL){
         root = root->left;
     }
 

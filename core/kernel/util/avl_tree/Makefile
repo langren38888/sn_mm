@@ -1,9 +1,11 @@
 .PHONY: avl
 
 avl:
+	rm -rf avl
 	gcc -I../../common/ avl_tree.c -o avl
 
 avl_test:
+	rm -rf avl
 	gcc -I../../common/ avl_tree.c avl_tree_test.c -o avl
 
 clean:

@@ -32,7 +32,13 @@ typedef STATUS (*in_order_callback)(AVL_NODE * node, void * in_orde_para);
 
 /* funcs extern */
 
-extern AVL_TREE LL_rotation(AVL_TREE k2);
-extern AVL_TREE LL_rotation(AVL_TREE k2);
+STATUS avltree_insert(AVL_TREE *root, AVL_NODE * node);
+AVL_NODE *avltree_delete(AVL_TREE *root, UINT32 key);
+AVL_NODE *avltree_search(AVL_TREE root, UINT32 key);
+AVL_NODE *avltree_successor_get(AVL_TREE root, UINT32 key);
+AVL_NODE *avltree_predecessor_get(AVL_TREE root, UINT32 key);
+AVL_NODE *avltree_minnum_get(AVL_TREE root);
+AVL_NODE *avltree_maxnum_get(AVL_TREE root);
+STATUS avltree_tree_travel(AVL_TREE root, in_order_callback call_back, void *para);
 
 #endif //AVL_TREE_H
