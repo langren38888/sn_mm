@@ -100,6 +100,10 @@ LOCAL inline void avltree_rebalance(AVL_NODE ***backtrack, UINT32 track_count)
 {
     AVL_NODE *  node_p = NULL;
     AVL_NODE ** node_pp;
+    AVL_NODE *  node_left_left;
+    AVL_NODE *  node_left_right;
+    AVL_NODE *  node_right_right;
+    AVL_NODE *  node_right_left;
     INT32  height = 0;
 
     while(track_count > 0){
@@ -115,8 +119,6 @@ LOCAL inline void avltree_rebalance(AVL_NODE ***backtrack, UINT32 track_count)
 
         if(height > 1){
             /* LL LR */
-            AVL_NODE *  node_left_left;
-            AVL_NODE *  node_left_right;
 
             node_left_left  = node_left->left;
             node_left_right = node_left->right;
@@ -130,8 +132,6 @@ LOCAL inline void avltree_rebalance(AVL_NODE ***backtrack, UINT32 track_count)
             }
         }else if(height < -1){
             /* RR RL */
-            AVL_NODE *  node_right_right;
-            AVL_NODE *  node_right_left;
 
             node_right_left  = node_right->left;
             node_right_right = node_right->right;

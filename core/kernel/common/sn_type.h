@@ -25,6 +25,10 @@ typedef unsigned long long  UINT64;
 typedef int STATUS;
 #endif
 
+#ifndef BOOL
+typedef unsigned int BOOL;
+#endif
+
 #ifndef LOCAL
 #define LOCAL static
 #endif
