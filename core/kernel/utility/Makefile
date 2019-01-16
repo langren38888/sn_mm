@@ -11,3 +11,7 @@ sll:
 dll:
 	rm -rf dll
 	gcc -I../common/ dll_lib.c -o dll
+
+list:
+	rm -rf dll
+	gcc -I../common/ list_lib.c -o list

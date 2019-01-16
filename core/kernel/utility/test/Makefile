@@ -12,5 +12,9 @@ dll_test:
 	rm -rf dll
 	gcc -I../../common/ -I../ ../dll_lib.c dll_lib_test.c -o dll
 
+list_test:
+	rm -rf list
+	gcc -I../../common/ -I../ ../list_lib.c list_lib_test.c -o list
+
 clean:
-	rm -rf avl sll dll
+	rm -rf avl sll dll list
