@@ -10,7 +10,8 @@ DLL_LIST *dll_create(dll_malloc malloc)
     if(NULL == list)
         return NULL;
 
-    dll_init(list);
+    if(OK != dll_init(list))
+        return NULL;
 
     return list;
 }
@@ -70,7 +71,8 @@ STATUS dll_insert(DLL_LIST *list, DLL_NODE *prev, DLL_NODE *node)
         prev->next = node;
 
         node->prev = prev;
-        node->next->prev = node;
+        if(node->next != NULL)
+            node->next->prev = node;
 
         if(list->tail == prev)
             list->tail = node;
@@ -129,7 +131,6 @@ DLL_NODE *dll_get(DLL_LIST * list)
     return node;
 }
 
-
 int dll_count(DLL_LIST * list)
 {
     DLL_NODE *node = NULL;
@@ -147,8 +148,6 @@ int dll_count(DLL_LIST * list)
 
     return ret;
 }
-
-
 
 DLL_NODE * dllEach(DLL_LIST *list, dll_each_func func, UINT32 param)
 {
