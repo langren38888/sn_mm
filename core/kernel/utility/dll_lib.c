@@ -120,12 +120,13 @@ DLL_NODE *dll_get(DLL_LIST * list)
 
     node = list->head;
 
-    if(NULL == node->next){
-        dll_init(list);
-    }else{
+    if(NULL != node){
         list->head = node->next;
-        list->head->prev = NULL;
-        node->next = NULL;
+        if(NULL == node->next){
+            list->tail = NULL;
+        }else{
+            list->head->prev = NULL;
+        }
     }
 
     return node;

@@ -4,14 +4,17 @@
 #include <sn_type.h>
 
 typedef struct list_node{
-    struct list_node *priv;
+    struct list_node *prev;
     struct list_node *next;
 }LIST_NODE;
 
 typedef struct{
-    LIST_NODE   *head_node;
+    LIST_NODE   node;
     UINT32      count;
 }LIST;
+
+typedef void *(*list_malloc)(UINT32 size);
+typedef STATUS (*list_free)(void *ptr);
 
 extern STATUS list_init(LIST *list);
 
