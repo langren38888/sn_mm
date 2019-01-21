@@ -153,7 +153,7 @@ LIST_NODE *list_next(LIST_NODE *node)
 UINT32 list_index_find(LIST *list, LIST_NODE *node)
 {
     LIST_NODE *node_tmp = NULL;
-    UINT32 index = 1;
+    UINT32 index = 0;
 
     if(NULL == list || NULL == node)
         return ERROR;
@@ -198,9 +198,55 @@ STATUS list_concatenate(LIST *dst_list, LIST *add_list)
     return OK;
 }
 
+/*
+* This routine extracts the sublist that starts with start_node and ends
+* with end_node from a source list.  It places the extracted list in
+* dst_list.
+*/
 STATUS list_extract(LIST *src_list, LIST_NODE *start_node, LIST_NODE *end_node, LIST *dst_list)
 {
-return OK;
+    LIST_NODE *node_tmp = NULL;
+    UINT32 sub_list_num = 1;
+
+    if(NULL == src_list || NULL == dst_list)
+        return ERROR;
+
+    if(NULL != start_node){
+        dst_list->HEAD = start_node;
+    }else{
+        return ERROR;
+    }
+
+    if(NULL != end_node){
+        dst_list->TAIL = end_node;
+    }else{
+        return ERROR;
+    }
+
+    node_tmp = start_node;
+    while(end_node != node_tmp){
+        sub_list_num++;
+        node_tmp = node_tmp->next;
+    }
+
+    if(NULL != start_node->prev){
+        start_node->prev->next = end_node->next;
+    }else{
+        src_list->HEAD = end_node->next;
+    }
+
+    if(NULL != end_node->next){
+        end_node->next->prev = start_node->prev;
+    }else{
+        src_list->TAIL = start_node->prev;
+    }
+
+    dst_list->HEAD->prev = NULL;
+    dst_list->TAIL->next = NULL;
+    dst_list->count = sub_list_num;
+    src_list->count -= sub_list_num;
+
+    return OK;
 }
 
 /* find the node that be specific by node_num
@@ -257,6 +303,8 @@ LIST_NODE *list_Nstep(LIST_NODE *node, INT32 Nstep)
                 return NULL;
         }
     }
+
+    return node;
 }
 
 STATUS list_free(LIST *list, list_free_func free_func)
