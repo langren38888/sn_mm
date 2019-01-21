@@ -14,7 +14,7 @@ typedef struct{
 }LIST;
 
 typedef void *(*list_malloc)(UINT32 size);
-typedef STATUS (*list_free)(void *ptr);
+typedef void  (*list_free_func)(void *ptr);
 
 extern STATUS list_init(LIST *list);
 

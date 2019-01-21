@@ -61,7 +61,7 @@ STATUS list_add(LIST *list, LIST_NODE *node)
 }
 
 /* delete a specific node in the list */
-STATUS list_delete(LIST *list, list_free free, LIST_NODE *node)
+STATUS list_delete(LIST *list, list_free_func free, LIST_NODE *node)
 {
     if(NULL == list || NULL == node)
         return ERROR;
@@ -259,15 +259,22 @@ LIST_NODE *list_Nstep(LIST_NODE *node, INT32 Nstep)
     }
 }
 
-#if 0
-void lstFree2
-    (
-    LIST*        list,       /* list for which to free all nodes */
-    LST_FREE_RTN freeFunc     /* free() function to call */
-    )
-void lstFree
-    (
-    LIST* list         /* list for which to free all nodes */
-    )
+STATUS list_free(LIST *list, list_free_func free_func)
+{
+    LIST_NODE *node_free = NULL;
 
-#endif
+    if(NULL == list_free || NULL == free_func)
+        return ERROR;
+
+    node_free = list->HEAD;
+
+    while(NULL != node_free){
+        list->HEAD = node_free->next;
+        free_func(node_free);
+        node_free = node_free = list->HEAD;
+    }
+
+    list_init(list);
+
+    return OK;
+}
