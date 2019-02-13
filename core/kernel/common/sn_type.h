@@ -21,6 +21,8 @@ typedef unsigned long       ULONG;
 typedef signed   long long  INT64;
 typedef unsigned long long  UINT64;
 
+typedef unsigned long       size_t;
+
 #ifndef STATUS
 typedef int STATUS;
 #endif

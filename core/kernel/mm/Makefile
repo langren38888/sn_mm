@@ -2,11 +2,11 @@
 
 pool_lib:
 	rm -rf plib
-	gcc pool_lib.c -o plib
+	gcc -I../utility/ -I../common/ pool_lib.c ../utility/dll_lib.c -o plib
 
 pg_pool_lib:
 	rm -rf pplib
-	gcc pg_pool_lib.c -o pplib
+	gcc -I../utility/ -I../common/ pg_pool_lib.c -o pplib
 
 clean:
 	rm -rf plib pplib

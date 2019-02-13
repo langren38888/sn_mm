@@ -31,4 +31,9 @@ extern DLL_NODE *dll_get(DLL_LIST * list);
 extern int dll_count(DLL_LIST * list);
 extern DLL_NODE * dllEach(DLL_LIST *list, dll_each_func func, UINT32 param);
 
+extern DLL_NODE *dll_first(DLL_LIST *list);
+extern DLL_NODE *dll_last(DLL_LIST *list);
+extern DLL_NODE *dll_next(DLL_NODE *node);
+extern DLL_NODE *dll_previous(DLL_NODE *node);
+
 #endif  /* DLL_LIB_H */

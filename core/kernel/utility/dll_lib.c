@@ -1,6 +1,26 @@
 #include <sn_common.h>
 #include "dll_lib.h"
 
+DLL_NODE *dll_first(DLL_LIST *list)
+{
+    return (list->head);
+}
+
+DLL_NODE *dll_last(DLL_LIST *list)
+{
+    return (list->tail);
+}
+
+DLL_NODE *dll_next(DLL_NODE *node)
+{
+    return (node->next);
+}
+
+DLL_NODE *dll_previous(DLL_NODE *node)
+{
+    return (node->prev);
+}
+
 DLL_LIST *dll_create(dll_malloc malloc)
 {
     DLL_LIST *list = NULL;
@@ -43,7 +63,7 @@ STATUS dll_terminate(DLL_LIST * list)
     return OK;
 }
 
-/* prev node: the prevous node of the node which to be inserted 
+/* prev node: the prevous node of the node which to be inserted
 *  if the prev node is empty, we insert the node to the heand of
 *  list.
 */
