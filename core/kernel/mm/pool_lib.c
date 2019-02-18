@@ -57,7 +57,8 @@ LOCAL STATUS pool_block_build
             if(NULL == p_blk)
                 return ERROR;
         }
-        no_free = BLOCK_DO_NOT_FREE;
+        /* only could be free pool block in this type */
+        no_free = ITEM_DO_NOT_FREE;
     }
 
     p_blk->p_itm_blk = (void *)((ULONG)p_usr_blk | no_free);
@@ -185,7 +186,7 @@ STATUS pool_delete(POOL_ID pool_id, BOOL force) /* force deletion if there are i
     /* The space of the item and block was allocted together from the pool_block_build. why
     it is freed separately here?? */
     while((p_blk = (POOL_BLOCK *)dll_get(&pool_id->block_list)) != NULL){
-        if(((ULONG)(p_blk->p_itm_blk) & BLOCK_DO_NOT_FREE) == 0){
+        if(((ULONG)(p_blk->p_itm_blk) & ITEM_DO_NOT_FREE) == 0){
             mem_part_free(pool_id->part_id, p_blk->p_itm_blk);
         }else{
             if(p_blk != &pool_id->static_block)
@@ -229,23 +230,191 @@ ULONG pool_block_add
     return itm_cnt;
 }
 
-#if 0
-STATUS pool_unused_blocks_free
+BOOL pool_find_item
 (
-    POOL_ID  pool_id     /* ID of pool to free blocks */
+    DLL_LIST *p_list,     /* pointer to list to check */
+    DLL_NODE *p_item      /* pointer to item to locate */
 )
+{
+    DLL_NODE *p_node = dll_first(p_list);
 
-void *pool_item_get
+    while((NULL != p_node) && (p_node != p_item)){
+        p_node = dll_next(p_node);
+    }
+
+    if(NULL == p_node)
+        return FALSE;
+
+    return TRUE;
+}
+
+LOCAL BOOL pool_block_is_free
 (
-    POOL_ID pool_id     /* ID of pool from which to get item */
+    POOL_ID     pool_id,    /* pool the block belongs to */
+    POOL_BLOCK  *p_blk      /* block to check */
 )
+{
+    void *item_tmp;
+    int idx;
+    BOOL is_free = TRUE;
+
+    item_tmp = (void *)((ULONG)(p_blk->p_itm_blk) & (ULONG)(~ITEM_DO_NOT_FREE));
+
+    for(idx = 0; idx < p_blk->item_cnt; idx ++){
+        if(pool_find_item(&pool_id->free_items, item_tmp) == FALSE){
+            is_free = FALSE;
+            break;
+        }
+
+        item_tmp = (void *)((char *)item_tmp + pool_id->siz_itm_real);
+    }
+
+    return is_free;
+}
+
+STATUS pool_unused_blocks_free(POOL_ID pool_id)
+{
+    POOL_BLOCK *p_block, *p_pre_block;
+    char *p_item;
+    ULONG idx;
+
+    if(NULL == pool_id)
+        return ERROR;
+
+    //TODO: POOL_LOCK
+
+    p_block = (POOL_BLOCK *)dll_first(&pool_id->block_list);
+
+    while(p_block != NULL){
+        p_pre_block = p_block;
+        p_block = (POOL_BLOCK *)dll_next((DLL_NODE *)p_block);
+
+        if(pool_block_is_free(pool_id, p_pre_block) && \
+            ((ULONG)(p_pre_block->p_itm_blk) & ITEM_DO_NOT_FREE == 0)){
+
+            for(idx = 0; idx < p_block->item_cnt; idx ++){
+                p_item = (char *)(p_pre_block->p_itm_blk) + idx * pool_id->siz_itm_real;
+                dll_remove(&pool_id->free_items, NULL, (DLL_NODE *)p_item);
+                pool_id->free_count--;
+            }
+
+            pool_id->num_totl -= p_block->item_cnt;
+
+            dll_remove(&pool_id->block_list, NULL, &p_pre_block->block_node);
+
+            mem_part_free(pool_id->part_id, p_pre_block->p_itm_blk);
+        }
+    }
+
+    //TODO: POOL_UNLOCK
+
+    return OK;
+}
+
+/* this routine can be called from interrupt context if the \
+pool was created without the POOLTHREAD_SAFE option */
+void *pool_item_get(POOL_ID pool_id)
+{
+    void *p_item = NULL;
+    BOOL malc = TRUE;
+
+    if(NULL == pool_id)
+        return NULL;
+
+    //TODO:LOCK
+
+    if(NULL == dll_first(&pool_id->free_items)){
+        if(0 == pool_id->num_incr){
+            malc = FALSE;
+        }
+#if 0
+/* could be happend from ISR */
+        else if(INT_CONTEXT()){
+            malc = FALSE;
+        }
+#endif
+        else if(pool_block_build(pool_id, pool_id->num_incr, NULL) == ERROR){
+            malc = FALSE;
+        }
+    }
+
+    if(malc == TRUE){
+        p_item = (void *)dll_get(&pool_id->free_items);
+        pool_id->free_count--;
+    }
+
+    //TODO:UNLOCK
+
+    return p_item;
+}
+
+LOCAL BOOL pool_item_is_valid
+(
+    POOL_ID pool_id,    /* ID of pool to be validated against */
+    void    *p_item     /* pointer to item to be validated */
+)
+{
+    POOL_BLOCK * p_blk;
+    char * p_item_t;
+    ULONG offset;
+
+    if(NULL == pool_id || NULL == p_item)
+        return FALSE;
+
+    p_blk = (POOL_BLOCK *)dll_first(&pool_id->block_list);
+
+    while(p_blk != NULL){
+        p_item_t = (char *)((ULONG)(p_blk->p_itm_blk) & (ULONG)~ITEM_DO_NOT_FREE);
+
+        if(((char *)p_item >= p_item_t) && \
+            ((char *)p_item < (p_item_t + pool_id->siz_itm_real * p_blk->item_cnt))){
+
+            offset = (char *)p_item - p_item_t;
+            if(offset/pool_id->siz_itm_real * pool_id->siz_itm_real == offset){
+                return TRUE;
+            }else{
+                return FALSE;
+            }
+        }
+
+        p_blk = (POOL_BLOCK *)dll_next(&p_blk->block_node);
+    }
+
+    return FALSE;
+}
 
 STATUS pool_item_return
 (
     POOL_ID pool_id,    /* ID of pool to which to return item */
     void    *p_item     /* pointer to item to return */
 )
-#endif
+{
+    UINT32 ret = ERROR;
+    UINT32 condition = TRUE;
+
+    if(NULL == pool_id || NULL == p_item)
+        return ERROR;
+
+    //TODO:POOL LOCK
+
+    if(pool_id->options & POOL_CHECK_ITEM){
+        if(pool_find_item(&pool_id->free_items, p_item) == TRUE){
+            condition = FALSE;
+        }else if(pool_item_is_valid(pool_id, p_item) != TRUE){
+            condition = FALSE;
+        }
+    }
+
+    if(condition == TRUE){
+        dll_add(&pool_id->free_items, (DLL_NODE *)p_item);
+        pool_id->free_count++;
+        ret = OK;
+    }
+
+    //TODO:POOL UNLOCK
+
+    return ret;
+}
 
 STATUS pool_increment_set(POOL_ID pool_id, ULONG incr_cnt)
 {
@@ -288,7 +457,7 @@ int pool_id_list_get
 {
     int count = 0;
     POOL_ID poolid;
-//TODO: lock
+    //TODO: lock
 
     poolid = (POOL_ID)dll_first(&pool_list_gbl);
     while((count < list_size) && (poolid != NULL)){
@@ -296,56 +465,6 @@ int pool_id_list_get
         poolid = (POOL_ID)dll_first(&pool_list_gbl);
     }
 
-//TODO: unlock
+    //TODO: unlock
     return count;
-}
-
-#if 0
-LOCAL BOOL pool_item_is_valid
-(
-    POOL_ID pool_id,    /* ID of pool to be validated against */
-    void    *p_item     /* pointer to item to be validated */
-)
-#endif
-
-BOOL pool_find_item
-(
-    DLL_LIST *p_list,     /* pointer to list to check */
-    DLL_NODE *p_item      /* pointer to item to locate */
-)
-{
-    DLL_NODE *p_node = dll_first(p_list);
-
-    while((NULL != p_node) && (p_node != p_item)){
-        p_node = dll_next(p_node);
-    }
-
-    if(NULL == p_node)
-        return FALSE;
-
-    return TRUE;
-}
-
-LOCAL BOOL pool_block_is_free
-(
-    POOL_ID     pool_id,    /* pool the block belongs to */
-    POOL_BLOCK  *p_blk      /* block to check */
-)
-{
-    void *item_tmp;
-    int idx;
-    BOOL is_free = TRUE;
-
-    item_tmp = (void *)((ULONG)(p_blk->p_itm_blk) & (ULONG)(~BLOCK_DO_NOT_FREE));
-
-    for(idx = 0; idx < p_blk->item_cnt; idx ++){
-        if(pool_find_item(&pool_id->free_items, item_tmp) == FALSE){
-            is_free = FALSE;
-            break;
-        }
-
-        item_tmp = (void *)((char *)item_tmp + pool_id->siz_itm_real);
-    }
-
-    return is_free;
 }

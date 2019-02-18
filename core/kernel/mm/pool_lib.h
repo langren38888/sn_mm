@@ -4,7 +4,10 @@
 #include <sn_type.h>
 #include <dll_lib.h>
 
-#define BLOCK_DO_NOT_FREE   0x00000001
+#define ITEM_DO_NOT_FREE   0x00000001
+
+#define POOL_THREAD_SAFE    1       /* enable multi-task protection */
+#define POOL_CHECK_ITEM     2       /* enable item check on return */
 
 /* ----------temperory */
 struct mem_part{
