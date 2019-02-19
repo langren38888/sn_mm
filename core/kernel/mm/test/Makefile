@@ -2,7 +2,7 @@
 
 plib_test:
 	rm -rf plib_test
-	gcc -I../ ../pool_lib.c pool_lib_test.c -o plib_test
+	gcc -I../../utility/ -I../../common/ -I../ ../pool_lib.c ../../utility/dll_lib.c pool_lib_test.c -o plib_test
 
 pplib_test:
 	rm -rf pplib_test

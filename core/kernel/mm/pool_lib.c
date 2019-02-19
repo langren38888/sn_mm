@@ -39,16 +39,17 @@ LOCAL STATUS pool_block_build
     UINT32 idx;
     UINT32 size_alloc;
     POOL_BLOCK * p_blk;
-    ULONG   no_free;
+    ULONG no_free = 0;
+    ULONG real_item_size = pool_id->siz_itm_real;
 
     if(NULL ==  p_usr_blk){
-        size_alloc = pool_id->siz_itm_real * item_cnt + sizeof(POOL_BLOCK);
+        size_alloc = real_item_size * item_cnt + sizeof(POOL_BLOCK);
 
         p_usr_blk = mem_part_alloc(pool_id->part_id, size_alloc);
         if(NULL == p_usr_blk)
             return ERROR;
 
-        p_blk = (POOL_BLOCK *)((char *)p_usr_blk + pool_id->siz_itm_real * item_cnt);
+        p_blk = (POOL_BLOCK *)((char *)p_usr_blk + real_item_size * item_cnt);
     }else{
         if(NULL == pool_id->static_block.p_itm_blk){
             p_blk = &pool_id->static_block;
@@ -67,7 +68,7 @@ LOCAL STATUS pool_block_build
     for(idx = 0; idx < item_cnt; idx ++){
         dll_add(&pool_id->free_items, (DLL_NODE *)p_usr_blk);
         pool_id->free_count++;
-        p_usr_blk = (void *)((char *)p_usr_blk + pool_id->siz_itm_real);
+        p_usr_blk = (void *)((char *)p_usr_blk + real_item_size);
     }
 
     dll_add(&pool_id->block_list, &p_blk->block_node);
@@ -152,7 +153,7 @@ POOL_ID pool_create
     if(itm_size == 0 || ((alignment & (alignment -1)) != 0))
         return NULL;
 
-    if(NULL == (p_pool = mem_part_alloc(part_id, sizeof(POOL_ID))))
+    if(NULL == (p_pool = mem_part_alloc(part_id, sizeof(struct pool))))
         return NULL;
 
     pool_id = pool_initialize(p_pool, p_name, itm_size, alignment, init_cnt, incr_cnt,\
@@ -165,7 +166,6 @@ POOL_ID pool_create
 
     return pool_id;
 }
-
 
 STATUS pool_delete(POOL_ID pool_id, BOOL force) /* force deletion if there are items in use */
 {
@@ -183,8 +183,6 @@ STATUS pool_delete(POOL_ID pool_id, BOOL force) /* force deletion if there are i
 
     //TODO: UNLOCK
 
-    /* The space of the item and block was allocted together from the pool_block_build. why
-    it is freed separately here?? */
     while((p_blk = (POOL_BLOCK *)dll_get(&pool_id->block_list)) != NULL){
         if(((ULONG)(p_blk->p_itm_blk) & ITEM_DO_NOT_FREE) == 0){
             mem_part_free(pool_id->part_id, p_blk->p_itm_blk);
@@ -201,7 +199,6 @@ STATUS pool_delete(POOL_ID pool_id, BOOL force) /* force deletion if there are i
     return OK;
 }
 
-
 ULONG pool_block_add
 (
     POOL_ID pool_id,    /* ID of pool to add block to */
@@ -211,6 +208,7 @@ ULONG pool_block_add
 {
     void * p_block_aligned;
     ULONG itm_cnt;
+    ULONG real_item_size = pool_id->siz_itm_real;
 
     if(NULL == p_block || NULL == pool_id)
         return ERROR;
@@ -218,7 +216,7 @@ ULONG pool_block_add
     p_block_aligned = (void *)ROUND_UP(p_block, pool_id->alignment);
 
     itm_cnt = (ULONG)(size - ((ULONG)p_block_aligned - (ULONG)p_block))/\
-                (ULONG)(pool_id->siz_itm_real);
+                real_item_size;
 
     if((itm_cnt < 1) || (size < ((ULONG)p_block_aligned - (ULONG)p_block)))
         return ERROR;
@@ -257,6 +255,7 @@ LOCAL BOOL pool_block_is_free
     void *item_tmp;
     int idx;
     BOOL is_free = TRUE;
+    ULONG real_item_size = pool_id->siz_itm_real;
 
     item_tmp = (void *)((ULONG)(p_blk->p_itm_blk) & (ULONG)(~ITEM_DO_NOT_FREE));
 
@@ -266,7 +265,7 @@ LOCAL BOOL pool_block_is_free
             break;
         }
 
-        item_tmp = (void *)((char *)item_tmp + pool_id->siz_itm_real);
+        item_tmp = (void *)((char *)item_tmp + real_item_size);
     }
 
     return is_free;
@@ -277,6 +276,7 @@ STATUS pool_unused_blocks_free(POOL_ID pool_id)
     POOL_BLOCK *p_block, *p_pre_block;
     char *p_item;
     ULONG idx;
+    ULONG real_item_size = pool_id->siz_itm_real;
 
     if(NULL == pool_id)
         return ERROR;
@@ -290,10 +290,10 @@ STATUS pool_unused_blocks_free(POOL_ID pool_id)
         p_block = (POOL_BLOCK *)dll_next((DLL_NODE *)p_block);
 
         if(pool_block_is_free(pool_id, p_pre_block) && \
-            ((ULONG)(p_pre_block->p_itm_blk) & ITEM_DO_NOT_FREE == 0)){
+            (((ULONG)(p_pre_block->p_itm_blk) & ITEM_DO_NOT_FREE) == 0)){
 
-            for(idx = 0; idx < p_block->item_cnt; idx ++){
-                p_item = (char *)(p_pre_block->p_itm_blk) + idx * pool_id->siz_itm_real;
+            for(idx = 0; idx < p_pre_block->item_cnt; idx ++){
+                p_item = (char *)(p_pre_block->p_itm_blk) + idx * real_item_size;
                 dll_remove(&pool_id->free_items, NULL, (DLL_NODE *)p_item);
                 pool_id->free_count--;
             }
@@ -357,6 +357,7 @@ LOCAL BOOL pool_item_is_valid
     POOL_BLOCK * p_blk;
     char * p_item_t;
     ULONG offset;
+    ULONG real_item_size = pool_id->siz_itm_real;
 
     if(NULL == pool_id || NULL == p_item)
         return FALSE;
@@ -367,10 +368,10 @@ LOCAL BOOL pool_item_is_valid
         p_item_t = (char *)((ULONG)(p_blk->p_itm_blk) & (ULONG)~ITEM_DO_NOT_FREE);
 
         if(((char *)p_item >= p_item_t) && \
-            ((char *)p_item < (p_item_t + pool_id->siz_itm_real * p_blk->item_cnt))){
+            ((char *)p_item < (p_item_t + real_item_size * p_blk->item_cnt))){
 
             offset = (char *)p_item - p_item_t;
-            if(offset/pool_id->siz_itm_real * pool_id->siz_itm_real == offset){
+            if(offset/real_item_size * real_item_size == offset){
                 return TRUE;
             }else{
                 return FALSE;
@@ -462,7 +463,7 @@ int pool_id_list_get
     poolid = (POOL_ID)dll_first(&pool_list_gbl);
     while((count < list_size) && (poolid != NULL)){
         pool_id_list[count++] = poolid;
-        poolid = (POOL_ID)dll_first(&pool_list_gbl);
+        poolid = (POOL_ID)dll_next(&poolid->pool_node);
     }
 
     //TODO: unlock

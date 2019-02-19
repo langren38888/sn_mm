@@ -4,19 +4,19 @@
 #include <sn_type.h>
 #include <dll_lib.h>
 
-#define ITEM_DO_NOT_FREE   0x00000001
+#define ITEM_DO_NOT_FREE   0x1
 
 #define POOL_THREAD_SAFE    1       /* enable multi-task protection */
 #define POOL_CHECK_ITEM     2       /* enable item check on return */
 
 /* ----------temperory */
 struct mem_part{
-    UINT32  tmp;
+    ULONG  tmp;
 };
 typedef struct mem_part *PART_ID;
 
 typedef struct semaphore{ /* SEMAPHORE */
-    UINT32  tmp;
+    ULONG  tmp;
 }SEMAPHORE;
 /* ++++++++++temperory */
 
@@ -45,6 +45,60 @@ typedef struct pool{
     POOL_BLOCK      static_block;   /* for the first static block */
 } POOL;
 
-typedef struct pool *   POOL_ID;
+typedef struct pool *POOL_ID;
 
+extern STATUS pool_lib_init (void);
+extern POOL_ID pool_initialize
+(
+    char *       p_pool,      /* pointer to pool structure memory */
+    const char * p_name,      /* optional name to assign to pool */
+    size_t       itm_size,   /* size in bytes of a pool item */
+    size_t       alignment,  /* alignment of a pool item */
+                             /* (must be power of 2, or 0) */
+    ULONG        init_cnt,   /* initial number of items to put in pool */
+    ULONG        incr_cnt,   /* min no of items to add to pool dynamically */
+                             /* (if 0, no pool expansion is done) */
+    PART_ID      part_id,    /* memory partition ID */
+    ULONG        options     /* initial options for pool */
+);
+extern POOL_ID pool_create
+(
+    const char *p_name,      /* optional name to assign to pool */
+    size_t      itm_size,   /* size in bytes of a pool item */
+    size_t      alignment,  /* alignment of a pool item */
+                            /* (must be power of 2, or 0) */
+    ULONG       init_cnt,   /* initial number of items to put in pool */
+    ULONG       incr_cnt,   /* min no of items to add to pool dynamically */
+                            /* (if 0, no pool expansion is done) */
+    PART_ID     part_id,    /* memory partition ID */
+    ULONG       options     /* initial options for pool */
+);
+extern STATUS pool_delete(POOL_ID pool_id, BOOL force);
+extern ULONG pool_block_add
+(
+    POOL_ID pool_id,    /* ID of pool to add block to */
+    void    *p_block,   /* base address of block to add */
+    size_t  size        /* size of block to add */
+);
+extern BOOL pool_find_item
+(
+    DLL_LIST *p_list,     /* pointer to list to check */
+    DLL_NODE *p_item      /* pointer to item to locate */
+);
+extern STATUS pool_unused_blocks_free(POOL_ID pool_id);
+extern void *pool_item_get(POOL_ID pool_id);
+extern STATUS pool_item_return
+(
+    POOL_ID pool_id,    /* ID of pool to which to return item */
+    void    *p_item     /* pointer to item to return */
+);
+extern STATUS pool_increment_set(POOL_ID pool_id, ULONG incr_cnt);
+extern ULONG pool_increment_get(POOL_ID pool_id);
+extern ULONG pool_total_count(POOL_ID pool_id);
+extern ULONG pool_free_count(POOL_ID pool_id);
+extern int pool_id_list_get
+(
+    POOL_ID pool_id_list[],     /* array to store pool ID */
+    int     list_size           /* array size */
+);
 #endif
