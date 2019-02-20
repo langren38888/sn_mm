@@ -16,4 +16,15 @@
 #define ROUND_DOWN  ROUND_DOWN_UL
 #define ALIGNED     ALIGNED_UL
 
+/* ----------temperory */
+struct mem_part{
+    unsigned long  tmp;
+};
+typedef struct mem_part *PART_ID;
+
+typedef struct semaphore{ /* SEMAPHORE */
+    unsigned long  tmp;
+}SEMAPHORE;
+/* ++++++++++temperory */
+
 #endif //SN_COMMON_H

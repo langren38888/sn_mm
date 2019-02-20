@@ -9,17 +9,6 @@
 #define POOL_THREAD_SAFE    1       /* enable multi-task protection */
 #define POOL_CHECK_ITEM     2       /* enable item check on return */
 
-/* ----------temperory */
-struct mem_part{
-    ULONG  tmp;
-};
-typedef struct mem_part *PART_ID;
-
-typedef struct semaphore{ /* SEMAPHORE */
-    ULONG  tmp;
-}SEMAPHORE;
-/* ++++++++++temperory */
-
 /* Pool Block records */
 typedef struct pool_block{
     DLL_NODE    block_node;  /* block node for pool */

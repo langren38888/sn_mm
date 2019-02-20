@@ -23,6 +23,9 @@ typedef unsigned long long  UINT64;
 
 typedef unsigned long       size_t;
 
+typedef unsigned long       PHYS_ADDR;
+typedef unsigned long       VIRT_ADDR;
+
 #ifndef STATUS
 typedef int STATUS;
 #endif

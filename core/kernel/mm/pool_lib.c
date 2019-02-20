@@ -29,6 +29,7 @@ LOCAL PART_ID pool_part_id_get(PART_ID part_id) /* partition ID */
     /* Here could be return memSysPartId as well */
 }
 
+/* Add a block of items to a specified pool */
 LOCAL STATUS pool_block_build
 (
     POOL_ID pool_id,    /* ID of pool to which to add block */
@@ -78,6 +79,7 @@ LOCAL STATUS pool_block_build
     return OK;
 }
 
+/* initialize a pool */
 POOL_ID pool_initialize
 (
     char *       p_pool,      /* pointer to pool structure memory */
@@ -134,6 +136,7 @@ POOL_ID pool_initialize
     return pool_id;
 }
 
+/* create a pool */
 POOL_ID pool_create
 (
     const char *p_name,      /* optional name to assign to pool */
@@ -167,6 +170,7 @@ POOL_ID pool_create
     return pool_id;
 }
 
+/* delete a pool */
 STATUS pool_delete(POOL_ID pool_id, BOOL force) /* force deletion if there are items in use */
 {
     POOL_BLOCK * p_blk;
@@ -199,6 +203,7 @@ STATUS pool_delete(POOL_ID pool_id, BOOL force) /* force deletion if there are i
     return OK;
 }
 
+/* add an item block to the pool */
 ULONG pool_block_add
 (
     POOL_ID pool_id,    /* ID of pool to add block to */
@@ -228,6 +233,7 @@ ULONG pool_block_add
     return itm_cnt;
 }
 
+/* support routine to find if item is in a DL list. */
 BOOL pool_find_item
 (
     DLL_LIST *p_list,     /* pointer to list to check */
@@ -246,6 +252,7 @@ BOOL pool_find_item
     return TRUE;
 }
 
+/* test if items in a block are free */
 LOCAL BOOL pool_block_is_free
 (
     POOL_ID     pool_id,    /* pool the block belongs to */
@@ -271,6 +278,7 @@ LOCAL BOOL pool_block_is_free
     return is_free;
 }
 
+/* free blocks that have all items unused */
 STATUS pool_unused_blocks_free(POOL_ID pool_id)
 {
     POOL_BLOCK *p_block, *p_pre_block;
@@ -311,7 +319,8 @@ STATUS pool_unused_blocks_free(POOL_ID pool_id)
     return OK;
 }
 
-/* this routine can be called from interrupt context if the \
+/* get next free item from pool and return a pointer to it.
+this routine can be called from interrupt context if the
 pool was created without the POOLTHREAD_SAFE option */
 void *pool_item_get(POOL_ID pool_id)
 {
@@ -348,6 +357,7 @@ void *pool_item_get(POOL_ID pool_id)
     return p_item;
 }
 
+/* check validity of an item */
 LOCAL BOOL pool_item_is_valid
 (
     POOL_ID pool_id,    /* ID of pool to be validated against */
@@ -384,6 +394,7 @@ LOCAL BOOL pool_item_is_valid
     return FALSE;
 }
 
+/* return an item to the pool */
 STATUS pool_item_return
 (
     POOL_ID pool_id,    /* ID of pool to which to return item */
@@ -417,6 +428,7 @@ STATUS pool_item_return
     return ret;
 }
 
+/* set the increment value used to grow the pool  */
 STATUS pool_increment_set(POOL_ID pool_id, ULONG incr_cnt)
 {
     if(NULL != pool_id)
@@ -450,6 +462,7 @@ ULONG pool_free_count(POOL_ID pool_id)
     return (pool_id->free_count);
 }
 
+/* get a list of pools in the system */
 int pool_id_list_get
 (
     POOL_ID pool_id_list[],     /* array to store pool ID */

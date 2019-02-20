@@ -6,7 +6,7 @@ pool_lib:
 
 pg_pool_lib:
 	rm -rf pplib
-	gcc -I../utility/ -I../common/ pg_pool_lib.c -o pplib
+	gcc -I../utility/ -I../common/ ../utility/avl_tree.c pg_pool_lib.c -o pplib
 
 clean:
 	rm -rf plib pplib
