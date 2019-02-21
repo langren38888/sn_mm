@@ -1,5 +1,7 @@
 #include <sn_common.h>
 #include "pg_pool_lib.h"
+#include "pool_lib.h"
+#include "ffs_lib.h"
 
 /* local typedefs */
 
@@ -10,11 +12,71 @@ typedef union page_pool_node
 }PAGE_POOL_NODE;
 
 LOCAL PAGE_POOL_NODE initial_nodes[NODE_POOL_INIT_CNT];
+LOCAL POOL_ID   pg_pool_node_id;
+LOCAL char node_pool[sizeof(POOL)];
+LOCAL PART_ID   pg_part_test_id;
 
 /* initialize the page pool library */
 STATUS pg_pool_lib_init(void)
 {
+    pg_pool_node_id = pool_initialize(node_pool,
+                                      "pg_pool",
+                                      sizeof(PAGE_POOL_NODE),
+                                      sizeof(ULONG),
+
+                                      0,
+                                      NODE_POOL_INCR_CNT,
+
+                                      pg_part_test_id,
+                                      POOL_THREAD_SAFE);
+    if(NULL == pg_pool_node_id)
+        return ERROR;
+
+    if(pool_block_add(pg_pool_node_id, initial_nodes, sizeof(initial_nodes)) == ERROR)
+        return ERROR;
+
     return OK;
+}
+
+/* initialize a page pool */
+PAGE_POOL_ID pg_pool_init
+(
+    PAGE_POOL_OBJ *pg_pool_obj,  /* page pool object to initialize   */
+    size_t         page_size,   /* minimum unit of allocation   */
+    PG_POOL_OPT    options     /* memory pool options  */
+)
+{
+    if(NULL == pg_pool_obj)
+        return NULL;
+
+    /* page size must be power of 2 */
+    if(0 == page_size || (page_size & (page_size -1) != 0))
+        return NULL;
+
+    //TODO:init semaphore pg_pool_obj->sem
+
+    pg_pool_obj->options        = options;
+    pg_pool_obj->page_size      = page_size;
+    pg_pool_obj->pg_num_shift   = ffs_msb32(page_size) - 1;
+
+    if((options & PG_POOL_OPT_TYPE_MASK) == PG_POOL_OPT_TYPE_PHYS){
+        pg_pool_obj->baseAddr.p = 0;
+        pg_pool_obj->addrMask.p = 0xffffffff;
+        //TODO: How about 64bits?
+    }
+
+    if((options & PG_POOL_OPT_TYPE_MASK) == PG_POOL_OPT_TYPE_VIRT){
+        pg_pool_obj->baseAddr.v = 0;
+        pg_pool_obj->addrMask.v = 0xffffffff;
+        //TODO: How about 64bits?
+    }
+
+    pg_pool_obj->num_pages      = 0;
+    pg_pool_obj->num_free_pages = 0;
+    pg_pool_obj->pg_num_tree    = NULL;
+    pg_pool_obj->size_tree      = NULL;
+
+    return pg_pool_obj;
 }
 
 /* create a page pool */
@@ -24,18 +86,19 @@ PAGE_POOL_ID pg_pool_create
     PG_POOL_OPT     options     /* page pool options */
 )
 {
-    return NULL;
-}
+    PAGE_POOL_OBJ * pg_pool_obj;
 
-/* initialize a page pool */
-PAGE_POOL_ID pg_pool_init
-(
-    PAGE_POOL_OBJ *pgPoolObj,  /* page pool object to initialize   */
-    size_t         pageSize,   /* minimum unit of allocation   */
-    PG_POOL_OPT    options     /* memory pool options  */
-)
-{
-    return NULL;
+    pg_pool_obj = (PAGE_POOL_OBJ *)mem_part_alloc(pg_part_test_id, sizeof(PAGE_POOL_OBJ));
+
+    if(NULL == pg_pool_obj)
+        return NULL;
+
+    pg_pool_obj = pg_pool_init(pg_pool_obj, page_size, options|PG_POOL_OPT_ALLOCATED);
+
+    if(NULL == pg_pool_obj)
+        return NULL;
+
+    return pg_pool_obj;
 }
 
 /* delete a page pool */

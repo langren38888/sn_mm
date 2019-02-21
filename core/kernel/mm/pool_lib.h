@@ -3,6 +3,7 @@
 
 #include <sn_type.h>
 #include <dll_lib.h>
+#include "mm_cmm_api_provide.h"
 
 #define ITEM_DO_NOT_FREE   0x1
 

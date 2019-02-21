@@ -16,15 +16,18 @@
 #define ROUND_DOWN  ROUND_DOWN_UL
 #define ALIGNED     ALIGNED_UL
 
-/* ----------temperory */
-struct mem_part{
-    unsigned long  tmp;
-};
-typedef struct mem_part *PART_ID;
+#ifdef _BIG_ENDIAN
+#undef _BIG_ENDIAN
+#endif /* _BIG_ENDIAN */
 
-typedef struct semaphore{ /* SEMAPHORE */
-    unsigned long  tmp;
-}SEMAPHORE;
-/* ++++++++++temperory */
+#define _BIG_ENDIAN 1234
+
+#ifdef _LITTLE_ENDIAN
+#undef _LITTLE_ENDIAN
+#endif /* _LITTLE_ENDIAN */
+
+#define _LITTLE_ENDIAN  4321
+
+#define _BYTE_ORDER _BIG_ENDIAN
 
 #endif //SN_COMMON_H

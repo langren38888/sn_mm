@@ -3,9 +3,15 @@
 
 #include <sn_type.h>
 #include <avl_tree.h>
+#include "mm_cmm_api_provide.h"
 
 #define NODE_POOL_INIT_CNT  32
 #define NODE_POOL_INCR_CNT  32
+
+#define PG_POOL_OPT_TYPE_PHYS   0x00000001U /* physical address space */
+#define PG_POOL_OPT_TYPE_VIRT   0x00000002U /* virtual address space */
+#define PG_POOL_OPT_TYPE_MASK   0x00000003U /* pool type mask */
+#define PG_POOL_OPT_ALLOCATED   0x00000004U /* pool object is allocated */
 
 typedef unsigned int PG_POOL_OPT;
 

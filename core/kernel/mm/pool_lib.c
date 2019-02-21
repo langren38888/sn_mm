@@ -1,19 +1,8 @@
 #include <sn_common.h>
 #include "pool_lib.h"
+#include "mm_cmm_api_provide.h"
 
 DLL_LIST pool_list_gbl = {NULL,NULL};  /* global pool list */
-
-/* ---------- tmp */
-#include "stdlib.h"
-char *mem_part_alloc(PART_ID part_id, UINT32 size)
-{
-    return (char *)malloc(size);
-}
-void mem_part_free(PART_ID part_id, char *ptr)
-{
-    free(ptr);
-}
-/* ++++++++++ tmp */
 
 STATUS pool_lib_init (void)
 {
@@ -156,7 +145,7 @@ POOL_ID pool_create
     if(itm_size == 0 || ((alignment & (alignment -1)) != 0))
         return NULL;
 
-    if(NULL == (p_pool = mem_part_alloc(part_id, sizeof(struct pool))))
+    if(NULL == (p_pool = mem_part_alloc(part_id, sizeof(POOL))))
         return NULL;
 
     pool_id = pool_initialize(p_pool, p_name, itm_size, alignment, init_cnt, incr_cnt,\
